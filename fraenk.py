@@ -19,7 +19,7 @@ class FraenkAPI:
         self.contract_id: Optional[str] = None
 
     def _base_headers(self):
-        """Standard Headers ohne Auth"""
+        """Standard headers without authentication"""
         return {
             "X-Tenant": "fraenk",
             "X-App-OS": "Android",
@@ -30,14 +30,14 @@ class FraenkAPI:
         }
 
     def _auth_headers(self):
-        """Headers mit Bearer Token"""
+        """Headers with Bearer token"""
         headers = self._base_headers()
         if self.access_token:
             headers["Authorization"] = f"Bearer {self.access_token}"
         return headers
 
     def login_initiate(self, username: str, password: str) -> dict:
-        """Schritt 1: Login initiieren - SMS Code wird verschickt (MFA)"""
+        """Step 1: Initiate login - SMS code will be sent (MFA)"""
         headers = self._base_headers()
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
@@ -68,7 +68,7 @@ class FraenkAPI:
     def login_complete(
         self, username: str, password: str, mtan: str, mfa_token: str
     ) -> dict:
-        """Schritt 2: Login mit SMS-Code abschließen (MFA)"""
+        """Step 2: Complete login with SMS code (MFA)"""
         headers = self._base_headers()
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
@@ -110,7 +110,7 @@ class FraenkAPI:
         return auth
 
     def get_contracts(self) -> list:
-        """Alle Verträge abrufen"""
+        """Fetch all contracts"""
         response = requests.get(
             f"{self.BASE_URL}/customers/{self.customer_id}/contracts",
             headers=self._auth_headers(),
@@ -124,7 +124,7 @@ class FraenkAPI:
         return contracts
 
     def get_data_consumption(self, use_cache: bool = False) -> dict:
-        """Datenverbrauch abrufen"""
+        """Fetch data consumption"""
         headers = self._auth_headers()
         if not use_cache:
             headers["Cache-Control"] = "no-cache"
@@ -208,26 +208,26 @@ def main():
 
     api = FraenkAPI()
 
-    # Login Schritt 1: SMS Code anfordern
+    # Login Step 1: Request SMS code
     print("Initiating login (MFA SMS will be sent)...")
     mfa_response = api.login_initiate(username, password)
     print(f"MFA response: {mfa_response.get('error_description', 'SMS sent!')}")
     mfa_token = mfa_response["mfa_token"]
 
-    # SMS-Code eingeben
+    # Enter SMS code
     sms_code = input("Enter SMS code: ")
 
-    # Login Schritt 2: Mit SMS-Code einloggen
+    # Login Step 2: Complete login with SMS code
     print("Completing login with SMS code...")
     api.login_complete(username, password, sms_code, mfa_token)
     print("Login successful!")
 
-    # Contracts abrufen
+    # Fetch contracts
     print("\nFetching contracts...")
     contracts = api.get_contracts()
     print(f"Found {len(contracts)} contract(s)")
 
-    # Datenverbrauch abrufen
+    # Fetch data consumption
     print("Fetching data consumption...")
     data = api.get_data_consumption()
 
