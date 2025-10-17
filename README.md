@@ -7,22 +7,19 @@ Unofficial Python client for tracking mobile data consumption from Fraenk mobile
 ### Installation
 
 ```bash
-# Install dependencies
-uv sync
-
-# Configure credentials
+# Configure credentials and  edit .env with your Fraenk email and password
 cp .env.example .env
-# Edit .env with your Fraenk email and password
 ```
 
 ### Usage
 
 ```bash
-# Check data consumption
-python fraenk.py
+# Check data consumption (pretty output)
+uv run fraenk
 
-# Save JSON export
-python fraenk.py --json
+# Output JSON to stdout (pipeable)
+uv run fraenk -j
+
 ```
 
 ### Example Output
@@ -31,7 +28,7 @@ python fraenk.py --json
 ==================================================
 =� FRAENK DATA CONSUMPTION
 ==================================================
-Phone: 0151 - 29489521
+Phone: 01234 - 567890
 Contract: POST_PAID
 
 --------------------------------------------------
@@ -59,12 +56,18 @@ Contract: POST_PAID
 
 ```
 .
-├── fraenk.py           # Main API client and CLI
-├── .env.example        # Credentials template
+├── src/
+│   └── fraenk_api/
+│       ├── __init__.py      # Package initialization
+│       ├── __main__.py      # Entry point for python -m
+│       ├── client.py        # FraenkAPI class
+│       ├── cli.py           # CLI logic
+│       └── utils.py         # Helper functions
+├── .env.example             # Credentials template
+├── pyproject.toml           # Project configuration
 └── docs/
-    ├── API.md          # API documentation
-    ├── USAGE.md        # Usage guide
-    └── README.md       # This file
+    ├── API.md               # API documentation
+    └── USAGE.md             # Usage guide
 ```
 
 ## Disclaimer

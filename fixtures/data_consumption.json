@@ -1,0 +1,25 @@
+{
+  "customer": {
+    "msisdn": "0151 - 29489521",
+    "contractType": "POST_PAID"
+  },
+  "passes": [
+    {
+      "passName": "Vertragsvolumen",
+      "type": "INCLUSIVE",
+      "usedVolume": "6,47 GB",
+      "usedBytes": 6952624056,
+      "initialVolume": "25 GB",
+      "initialVolumeBytes": 26843545600,
+      "expectedConsumption": "44,84 GB",
+      "percentageConsumption": 26,
+      "expiryTimestamp": 1761951599000,
+      "lastUpdateTimestamp": 1760737485000,
+      "speedon": false,
+      "speedStepDown": false,
+      "messagingOption": false,
+      "steps": []
+    }
+  ],
+  "bookableDataPassesAvailable": true
+}

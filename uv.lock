@@ -3,17 +3,6 @@ revision = 3
 requires-python = ">=3.13"
 
 [[package]]
-name = "1f43452c-9770-44b3-8a1c-d5a0b9f12145"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "requests" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "requests", specifier = ">=2.32.5" }]
-
-[[package]]
 name = "certifi"
 version = "2025.10.5"
 source = { registry = "https://pypi.org/simple" }
@@ -62,6 +51,17 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/da/5f/6b8f83a55bb8278772c5ae54a577f3099025f9ade59d0136ac24a0df4bde/charset_normalizer-3.4.4-cp314-cp314-win_arm64.whl", hash = "sha256:de00632ca48df9daf77a2c65a484531649261ec9f25489917f09e455cb09ddb2", size = 100743, upload-time = "2025-10-14T04:41:52.122Z" },
     { url = "https://files.pythonhosted.org/packages/0a/4c/925909008ed5a988ccbb72dcc897407e5d6d3bd72410d69e051fc0c14647/charset_normalizer-3.4.4-py3-none-any.whl", hash = "sha256:7a32c560861a02ff789ad905a2fe94e3f840803362c84fecf1851cb4cf3dc37f", size = 53402, upload-time = "2025-10-14T04:42:31.76Z" },
 ]
+
+[[package]]
+name = "fraenk-api"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "requests" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "requests", specifier = ">=2.32.5" }]
 
 [[package]]
 name = "idna"

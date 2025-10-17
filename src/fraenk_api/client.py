@@ -1,15 +1,15 @@
+"""Fraenk API client for mobile data consumption tracking."""
+
 import base64
 import json
-import os
-import sys
-from datetime import datetime
-from pathlib import Path
 from typing import Optional
 
 import requests
 
 
 class FraenkAPI:
+    """Client for interacting with the Fraenk mobile API."""
+
     BASE_URL = "https://app.fraenk.de/fraenk-rest-service/app/v13"
 
     def __init__(self):
@@ -136,109 +136,3 @@ class FraenkAPI:
         response.raise_for_status()
 
         return response.json()
-
-
-def load_env_file():
-    """Load environment variables from .env file if it exists"""
-    env_file = Path(__file__).parent / ".env"
-    if env_file.exists():
-        with open(env_file) as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    key, value = line.split("=", 1)
-                    os.environ[key.strip()] = value.strip()
-
-
-def save_json_export(data: dict) -> str:
-    """Save data consumption to JSON file with timestamp"""
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M")
-    filename = f"fraenk-api-{timestamp}.json"
-
-    with open(filename, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-    return filename
-
-
-def display_data_consumption(data: dict):
-    """Display formatted data consumption information"""
-    print("\n" + "=" * 50)
-    print("📱 FRAENK DATA CONSUMPTION")
-    print("=" * 50)
-
-    customer = data.get("customer", {})
-    print(f"Phone: {customer.get('msisdn', 'N/A')}")
-    print(f"Contract: {customer.get('contractType', 'N/A')}")
-
-    print("\n" + "-" * 50)
-
-    for pass_info in data.get("passes", []):
-        print(f"\n📊 {pass_info.get('passName', 'Unknown')}")
-        print(
-            f"   Used: {pass_info.get('usedVolume', 'N/A')} / {pass_info.get('initialVolume', 'N/A')}"
-        )
-        print(f"   Usage: {pass_info.get('percentageConsumption', 0)}%")
-
-        # Convert timestamp to readable date
-        expiry = pass_info.get("expiryTimestamp")
-        if expiry:
-            expiry_date = datetime.fromtimestamp(expiry / 1000)
-            print(f"   Expires: {expiry_date.strftime('%Y-%m-%d %H:%M')}")
-
-    print("\n" + "=" * 50)
-
-
-def main():
-    """Main function to demonstrate API usage"""
-    # Parse command line arguments
-    save_json = "--json" in sys.argv
-
-    # Load .env file if it exists
-    load_env_file()
-
-    # Get credentials from environment variables
-    username = os.getenv("FRAENK_USERNAME")
-    password = os.getenv("FRAENK_PASSWORD")
-
-    if not username:
-        raise ValueError("FRAENK_USERNAME environment variable must be set")
-    if not password:
-        raise ValueError("FRAENK_PASSWORD environment variable must be set")
-
-    api = FraenkAPI()
-
-    # Login Step 1: Request SMS code
-    print("Initiating login (MFA SMS will be sent)...")
-    mfa_response = api.login_initiate(username, password)
-    print(f"MFA response: {mfa_response.get('error_description', 'SMS sent!')}")
-    mfa_token = mfa_response["mfa_token"]
-
-    # Enter SMS code
-    sms_code = input("Enter SMS code: ")
-
-    # Login Step 2: Complete login with SMS code
-    print("Completing login with SMS code...")
-    api.login_complete(username, password, sms_code, mfa_token)
-    print("Login successful!")
-
-    # Fetch contracts
-    print("\nFetching contracts...")
-    contracts = api.get_contracts()
-    print(f"Found {len(contracts)} contract(s)")
-
-    # Fetch data consumption
-    print("Fetching data consumption...")
-    data = api.get_data_consumption()
-
-    # Save JSON if requested
-    if save_json:
-        filename = save_json_export(data)
-        print(f"\n✅ Saved to {filename}")
-
-    # Display formatted data consumption
-    display_data_consumption(data)
-
-
-if __name__ == "__main__":
-    main()

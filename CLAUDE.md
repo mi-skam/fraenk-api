@@ -72,12 +72,17 @@ Header: Cache-Control: no-cache (optional, for fresh data)
 
 | File | Description |
 |------|-------------|
-| `fraenk.py` | Main API client with CLI |
+| `src/fraenk_api/` | Main package directory |
+| `src/fraenk_api/__init__.py` | Package initialization |
+| `src/fraenk_api/__main__.py` | Entry point for python -m |
+| `src/fraenk_api/client.py` | FraenkAPI class |
+| `src/fraenk_api/cli.py` | CLI implementation |
+| `src/fraenk_api/utils.py` | Helper functions |
 | `.env.example` | Credentials template |
-| `.gitignore` | Excludes `.env` and JSON exports |
+| `.gitignore` | Excludes `.env` |
 | `docs/API.md` | Complete API documentation |
 | `docs/USAGE.md` | Usage guide and examples |
-| `pyproject.toml` | Dependencies (requests only) |
+| `pyproject.toml` | Project config with console script |
 
 ## Key Implementation Details
 
@@ -88,19 +93,26 @@ Header: Cache-Control: no-cache (optional, for fresh data)
 - MFA required for every login
 
 ### Architecture Decisions
-- All imports at top (PEP 8)
-- Helper functions: `load_env_file()`, `save_json_export()`, `display_data_consumption()`
-- Type hints on helper functions
-- Can be used as library by importing `FraenkAPI` class
+- Proper Python package structure using src layout
+- Modular design: separate client, CLI, and utils modules
+- Console script entry point (`fraenk` command)
+- Type hints throughout
+- Can be used as library by importing `from fraenk_api import FraenkAPI`
 
 ## Usage
 
 ```bash
-# Basic usage
-python fraenk.py
+# Basic usage (pretty output)
+uv run fraenk
 
-# Save JSON export
-python fraenk.py --json
+# Or use python -m
+uv run python -m fraenk_api
+
+# JSON output to stdout
+uv run fraenk -j
+
+# Quiet mode
+uv run fraenk -q
 ```
 
 ## Lessons Learned
