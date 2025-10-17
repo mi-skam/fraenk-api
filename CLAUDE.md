@@ -1,147 +1,130 @@
-# Fraenk Mobile Data Tracking
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
-Python client for tracking mobile data consumption from Fraenk mobile service via reverse-engineered API.
+Python client for tracking mobile data consumption from Fraenk mobile service via reverse-engineered API. Uses MFA (SMS-based) authentication and requires user interaction for SMS codes.
 
-## Status: ✅ Complete
+## Development Commands
 
-Working Python API client with MFA authentication, data consumption tracking, and JSON export.
-
-## What Was Built
-
-### 1. Working API Client (`fraenk.py`)
-- **MFA Authentication**: Two-step login with SMS verification
-- **Data Consumption**: Fetch current usage, limits, and expiry
-- **JSON Export**: Save full API responses with `--json` flag
-- **Clean Architecture**: Modular code with helper functions
-
-### 2. API Discovery Process
-- Decompiled `de.congstar.fraenk_apkgk.apk` using jadx
-- Found base API URL: `https://app.fraenk.de/fraenk-rest-service/app/v13`
-- Located authentication endpoints in `/sources/sa/InterfaceC2555a.java`
-- Discovered actual auth flow uses **password + SMS MFA**, not passwordless tokens
-
-### 3. Authentication Flow (Corrected)
-
-**Step 1: Initiate Login**
-```
-POST /login
-Body: grant_type=password&username={email}&password={password}&scope=app
-Response: 401 with mfa_token (SMS sent to phone)
-```
-
-**Step 2: Complete Login with MFA**
-```
-POST /login-with-mfa
-Body: username={email}&password={password}&mtan={sms_code}&mfa_token={token}
-Response: access_token, refresh_token
-```
-
-**JWT Token Processing:**
-- Decode JWT payload (base64url) without verification
-- Extract customer_id from `sub` field: `f:uuid:7555659511` → `7555659511`
-
-### 4. Data Consumption Endpoint
-```
-GET /customers/{customer_id}/contracts/{contract_id}/dataconsumption
-Header: Authorization: Bearer {access_token}
-Header: Cache-Control: no-cache (optional, for fresh data)
-```
-
-**Response:**
-```json
-{
-  "customer": {
-    "msisdn": "0151 - 29489521",
-    "contractType": "POST_PAID"
-  },
-  "passes": [
-    {
-      "passName": "Vertragsvolumen",
-      "usedVolume": "5,17 GB",
-      "usedBytes": 5560651713,
-      "initialVolume": "25 GB",
-      "percentageConsumption": 21,
-      "expiryTimestamp": 1761951599000
-    }
-  ]
-}
-```
-
-## Files Created
-
-| File | Description |
-|------|-------------|
-| `src/fraenk_api/` | Main package directory |
-| `src/fraenk_api/__init__.py` | Package initialization |
-| `src/fraenk_api/__main__.py` | Entry point for python -m |
-| `src/fraenk_api/client.py` | FraenkAPI class |
-| `src/fraenk_api/cli.py` | CLI implementation |
-| `src/fraenk_api/utils.py` | Helper functions |
-| `.env.example` | Credentials template |
-| `.gitignore` | Excludes `.env` |
-| `docs/API.md` | Complete API documentation |
-| `docs/USAGE.md` | Usage guide and examples |
-| `pyproject.toml` | Project config with console script |
-
-## Key Implementation Details
-
-### Security
-- Credentials loaded from `.env` file (gitignored)
-- No external dependencies except `requests`
-- JWT decoded with stdlib (base64 + json), no PyJWT needed
-- MFA required for every login
-
-### Architecture Decisions
-- Proper Python package structure using src layout
-- Modular design: separate client, CLI, and utils modules
-- Console script entry point (`fraenk` command)
-- Type hints throughout
-- Can be used as library by importing `from fraenk_api import FraenkAPI`
-
-## Usage
-
+### Running the CLI
 ```bash
-# Basic usage (pretty output)
+# Standard usage (requires SMS for MFA)
 uv run fraenk
-
-# Or use python -m
-uv run python -m fraenk_api
 
 # JSON output to stdout
 uv run fraenk -j
 
-# Quiet mode
+# Dry-run mode (uses fixtures, no API calls, no SMS required)
+uv run fraenk -d
+
+# Quiet mode (suppress progress messages)
 uv run fraenk -q
+
+# Alternative: run as module
+uv run python -m fraenk_api
 ```
 
-## Lessons Learned
+### Setup
+```bash
+# Configure credentials
+cp .env.example .env
+# Then edit .env with FRAENK_USERNAME and FRAENK_PASSWORD
 
-1. **CLAUDE.md was wrong** - Documented "passwordless auth" was for password reset, not login
-2. **JWT decoding simple** - No need for PyJWT library, stdlib base64 + json sufficient
-3. **MFA always required** - HTTP 401 with `mfa_required` is success, not error
-4. **Customer ID extraction** - JWT `sub` field has format `f:uuid:number`, extract last part
-5. **API versioning** - Using `/app/v13`, may need updates for future versions
+# Dependencies are managed via pyproject.toml
+# No manual installation needed with uv
+```
 
-## Reverse Engineering Process
+## Architecture
 
-1. Decompiled APK with jadx
-2. Found API service interfaces in `sources/sa/`
-3. Identified request/response models in `sources/na/`
-4. Tested endpoints with real credentials
-5. Debugged error responses to understand flow
-6. Documented working implementation
+### Package Structure (src layout)
+- **src/fraenk_api/client.py**: Core `FraenkAPI` class with authentication and data fetching
+- **src/fraenk_api/cli.py**: CLI implementation with argparse (includes dry-run fixture support)
+- **src/fraenk_api/utils.py**: Helper functions (display formatting, .env loading)
+- **src/fraenk_api/__init__.py**: Package exports
+- **src/fraenk_api/__main__.py**: Entry point for `python -m fraenk_api`
 
-## Next Steps (Future)
+### Console Script
+Entry point defined in pyproject.toml: `fraenk = "fraenk_api.cli:main"`
 
-- [ ] Token refresh implementation (use `refresh_token`)
-- [ ] Session persistence (save tokens to file)
-- [ ] Historical data tracking (store JSON exports over time)
-- [ ] Data visualization (plot usage over time)
-- [ ] Alerting (notify when approaching limit)
+### Key Implementation Patterns
 
-## Related Documentation
+**MFA Authentication (Two-Step)**
+1. `login_initiate()` - Returns mfa_token, SMS sent to phone (HTTP 401 with `mfa_required` is expected)
+2. `login_complete()` - Accepts SMS code, returns access_token and refresh_token
 
-- Full API reference: `docs/API.md`
-- Usage guide: `docs/USAGE.md`
-- Decompiled source: `sources/` directory
+**JWT Customer ID Extraction** (client.py:98-108)
+- Decode JWT payload using stdlib (base64 + json, no PyJWT library)
+- Extract from `sub` field with format `f:uuid:{customer_id}`
+- Split on `:` and take last component
+
+**Standard API Headers** (client.py:21-30)
+All API requests require these headers to mimic the Android app:
+```python
+{
+    "X-Tenant": "fraenk",
+    "X-App-OS": "Android",
+    "X-App-Device": "Python-Client",
+    "X-App-Device-Vendor": "Python",
+    "X-App-OS-Version": "13",
+    "X-App-Version": "1.13.9"
+}
+```
+
+### Testing with Fixtures
+The CLI supports `--dry-run` mode (cli.py:46-54) which loads mock data from `fixtures/` directory:
+- `fixtures/contracts.json` - Mock contract data
+- `fixtures/data_consumption.json` - Mock consumption data
+- No API calls made, no SMS required
+- Useful for testing display logic without live credentials
+
+## API Details
+
+**Base URL**: `https://app.fraenk.de/fraenk-rest-service/app/v13`
+
+**Key Endpoints**:
+- `POST /login` - Initiate MFA login (returns mfa_token)
+- `POST /login-with-mfa` - Complete login with SMS code
+- `GET /customers/{customer_id}/contracts` - List contracts
+- `GET /customers/{customer_id}/contracts/{contract_id}/dataconsumption` - Get usage data
+
+**Important Notes**:
+- HTTP 401 with `error: "mfa_required"` is the expected response for Step 1 (not an error)
+- `Cache-Control: no-cache` header ensures fresh data (optional)
+- API version is `/v13` - may require updates for future versions
+
+## Library Usage
+
+Can be imported and used programmatically:
+```python
+from fraenk_api import FraenkAPI
+
+api = FraenkAPI()
+mfa_response = api.login_initiate(username, password)
+api.login_complete(username, password, sms_code, mfa_response["mfa_token"])
+api.get_contracts()
+data = api.get_data_consumption()
+```
+
+## Reverse Engineering Context
+
+This project was created by decompiling the Fraenk Android APK (`de.congstar.fraenk_apkgk.apk`) with jadx. The decompiled source is in `sources/` directory:
+- `sources/sa/InterfaceC2555a.java` - API service interfaces
+- `sources/na/` - Request/response models
+
+Key discoveries:
+- Actual auth uses password + SMS MFA (not passwordless tokens)
+- Customer ID extraction pattern from JWT `sub` field
+- Required headers to mimic Android app
+
+## Dependencies
+
+Minimal dependency footprint:
+- **requests**: Only external dependency for HTTP calls
+- **stdlib only**: JWT decoding, base64, json, argparse
+- **Python 3.13+**: Required version
+
+## Documentation
+
+- `docs/API.md` - Complete API endpoint documentation with request/response examples
+- `docs/USAGE.md` - Installation guide, setup instructions, troubleshooting
