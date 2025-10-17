@@ -1,7 +1,7 @@
 [project]
-name = "1f43452c-9770-44b3-8a1c-d5a0b9f12145"
+name = "fraenk-api"
 version = "0.1.0"
-description = "Add your description here"
+description = "Unofficial Python client for Fraenk mobile data consumption API"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
