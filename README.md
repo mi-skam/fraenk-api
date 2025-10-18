@@ -7,7 +7,7 @@ Unofficial Python client for tracking mobile data consumption from Fraenk mobile
 ### Installation
 
 ```bash
-# Configure credentials and  edit .env with your Fraenk email and password
+# Configure credentials and edit .env with your Fraenk email and password
 cp .env.example .env
 ```
 

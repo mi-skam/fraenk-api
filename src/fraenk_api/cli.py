@@ -11,11 +11,11 @@ from fraenk_api.utils import display_data_consumption, load_env_file
 
 def load_fixture(filename: str) -> dict:
     """Load mock data from fixtures directory"""
-    fixture_path = Path.cwd() / "fixtures" / filename
+    fixture_path = Path(__file__).parent.parent.parent / "fixtures" / filename
     if not fixture_path.exists():
         raise FileNotFoundError(f"Fixture not found: {fixture_path}")
 
-    with open(fixture_path) as f:
+    with open(fixture_path, encoding='utf-8') as f:
         return json.load(f)
 
 
@@ -71,32 +71,52 @@ def main():
         # Login Step 1: Request SMS code
         if not args.json:
             print("Initiating login (MFA SMS will be sent)...")
-        mfa_response = api.login_initiate(username, password)
+        try:
+            mfa_response = api.login_initiate(username, password)
+        except Exception as e:
+            raise SystemExit(f"Login initiation failed: {e}") from e
+
         if not args.json:
-            print(f"MFA response: {mfa_response.get('error_description', 'SMS sent!')}")
-        mfa_token = mfa_response["mfa_token"]
+            print("SMS sent!")
+
+        mfa_token = mfa_response.get("mfa_token")
+        if not mfa_token:
+            raise SystemExit(f"Login failed: {mfa_response.get('error_description', 'No MFA token received')}")
 
         # Enter SMS code
-        sms_code = input("Enter SMS code: ")
+        if args.json:
+            # In JSON mode, read from stdin silently
+            sms_code = input()
+        else:
+            sms_code = input("Enter SMS code: ")
 
         # Login Step 2: Complete login with SMS code
         if not args.json:
             print("Completing login with SMS code...")
-        api.login_complete(username, password, sms_code, mfa_token)
+        try:
+            api.login_complete(username, password, sms_code, mfa_token)
+        except Exception as e:
+            raise SystemExit(f"Login completion failed: {e}") from e
         if not args.json:
             print("Login successful!")
 
         # Fetch contracts
         if not args.json and not args.quiet:
             print("\nFetching contracts...")
-        contracts = api.get_contracts()
+        try:
+            contracts = api.get_contracts()
+        except Exception as e:
+            raise SystemExit(f"Failed to fetch contracts: {e}") from e
         if not args.json and not args.quiet:
             print(f"Found {len(contracts)} contract(s)")
 
         # Fetch data consumption
         if not args.json and not args.quiet:
             print("Fetching data consumption...")
-        data = api.get_data_consumption()
+        try:
+            data = api.get_data_consumption()
+        except Exception as e:
+            raise SystemExit(f"Failed to fetch data consumption: {e}") from e
 
     # Output based on mode
     if args.json:
