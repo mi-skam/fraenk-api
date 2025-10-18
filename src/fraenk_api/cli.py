@@ -3,7 +3,7 @@
 import argparse
 import json
 import os
-from pathlib import Path
+from importlib.resources import files
 
 from fraenk_api.client import FraenkAPI
 from fraenk_api.utils import display_data_consumption, load_env_file
@@ -11,12 +11,15 @@ from fraenk_api.utils import display_data_consumption, load_env_file
 
 def load_fixture(filename: str) -> dict:
     """Load mock data from fixtures directory"""
-    fixture_path = Path(__file__).parent.parent.parent / "fixtures" / filename
-    if not fixture_path.exists():
-        raise FileNotFoundError(f"Fixture not found: {fixture_path}")
+    fixtures_dir = files("fraenk_api").joinpath("fixtures")
+    fixture_file = fixtures_dir.joinpath(filename)
 
-    with open(fixture_path, encoding='utf-8') as f:
-        return json.load(f)
+    try:
+        fixture_text = fixture_file.read_text(encoding='utf-8')
+    except (FileNotFoundError, AttributeError):
+        raise FileNotFoundError(f"Fixture not found: {filename}")
+
+    return json.loads(fixture_text)
 
 
 def main():
