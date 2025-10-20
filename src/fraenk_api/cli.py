@@ -6,7 +6,7 @@ import os
 from importlib.resources import files
 
 from fraenk_api.client import FraenkAPI
-from fraenk_api.utils import display_data_consumption, load_env_file
+from fraenk_api.utils import display_data_consumption, load_credentials
 
 
 def load_fixture(filename: str) -> dict:
@@ -57,8 +57,8 @@ def main():
         data = load_fixture("data_consumption.json")
     else:
         # Normal mode: use real API calls
-        # Load .env file if it exists
-        load_env_file()
+        # Load credentials from all available sources
+        load_credentials()
 
         # Get credentials from environment variables
         username = os.getenv("FRAENK_USERNAME")

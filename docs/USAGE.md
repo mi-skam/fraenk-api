@@ -8,7 +8,9 @@
 
 ### Initial Setup
 
-First, clone the project and configure credentials:
+**For Development:**
+
+Clone the project and configure credentials in `.env`:
 
 ```bash
 # Clone the project
@@ -25,6 +27,26 @@ Edit `.env` with your Fraenk credentials:
 FRAENK_USERNAME=your_email@example.com
 FRAENK_PASSWORD=your_password
 ```
+
+**For Installed Usage (uv tool install):**
+
+After installing with `uv tool install`, create a config file in your home directory:
+
+```bash
+# Create config directory
+mkdir -p ~/.config/fraenk
+
+# Create credentials file
+cat > ~/.config/fraenk/credentials << EOF
+FRAENK_USERNAME=your_email@example.com
+FRAENK_PASSWORD=your_password
+EOF
+
+# Secure the file (recommended)
+chmod 600 ~/.config/fraenk/credentials
+```
+
+The config file uses the same KEY=VALUE format as `.env`.
 
 ## Installation Methods
 
@@ -157,14 +179,36 @@ This uses mock data from the `fixtures/` directory, useful for testing display l
 | `--dry-run` | `-d` | Use mock data from fixtures (no API calls, no SMS required) |
 | `--help` | `-h` | Show help message and exit |
 
-## Environment Variables
+## Credential Management
 
-The script uses the following environment variables (loaded from `.env`):
+The CLI loads credentials from multiple sources with the following priority:
+
+1. **Environment variables** (highest priority) - Best for CI/automation
+   ```bash
+   export FRAENK_USERNAME=your_email@example.com
+   export FRAENK_PASSWORD=your_password
+   ```
+
+2. **Config file at `~/.config/fraenk/credentials`** - Best for installed usage
+   ```bash
+   FRAENK_USERNAME=your_email@example.com
+   FRAENK_PASSWORD=your_password
+   ```
+
+3. **.env in current directory** (lowest priority) - Best for development
+   ```bash
+   FRAENK_USERNAME=your_email@example.com
+   FRAENK_PASSWORD=your_password
+   ```
+
+### Required Credentials
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `FRAENK_USERNAME` | Yes | Your Fraenk account email |
 | `FRAENK_PASSWORD` | Yes | Your Fraenk account password |
+
+The CLI will fail with a clear error if credentials are not found in any source.
 
 ## Advanced Usage
 

@@ -26,14 +26,44 @@ uv run python -m fraenk_api
 ```
 
 ### Setup
+
+**Credentials Configuration (Fallback Chain)**
+
+The CLI loads credentials from multiple sources with the following priority:
+1. **Environment variables** (highest priority) - Best for CI/automation
+2. **Config file at `~/.config/fraenk/credentials`** - Best for installed usage
+3. **.env in current directory** (lowest priority) - Best for development
+
+All sources use the same KEY=VALUE format:
 ```bash
-# Configure credentials
+FRAENK_USERNAME=your_phone_number
+FRAENK_PASSWORD=your_password
+```
+
+**Development setup:**
+```bash
+# Configure credentials in .env
 cp .env.example .env
 # Then edit .env with FRAENK_USERNAME and FRAENK_PASSWORD
-
-# Dependencies are managed via pyproject.toml
-# No manual installation needed with uv
 ```
+
+**Installed usage:**
+```bash
+# Create config directory and file
+mkdir -p ~/.config/fraenk
+echo "FRAENK_USERNAME=your_phone_number" > ~/.config/fraenk/credentials
+echo "FRAENK_PASSWORD=your_password" >> ~/.config/fraenk/credentials
+chmod 600 ~/.config/fraenk/credentials  # Recommended for security
+```
+
+**CI/Automation:**
+```bash
+# Set environment variables directly
+export FRAENK_USERNAME=your_phone_number
+export FRAENK_PASSWORD=your_password
+```
+
+Dependencies are managed via pyproject.toml. No manual installation needed with uv.
 
 ## Architecture
 
