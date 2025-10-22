@@ -8,7 +8,8 @@ from fraenk_api.utils import (
     load_fixture,
     log_info,
     log_progress,
-    output_data,
+    print_consumption_as_json,
+    print_consumption,
 )
 
 
@@ -16,7 +17,11 @@ def main():
     """Main CLI entry point"""
     args = parse_args()
     data = run(args)
-    output_data(data, args)
+
+    if args.json:
+        print_consumption_as_json(data)
+    else:
+        print_consumption(data)
 
 
 def parse_args():
@@ -48,7 +53,7 @@ def run(args) -> dict:
         log_info("Running in DRY-RUN mode (using fixtures)", args)
         api = None
     else:
-        api = _authenticate(args)
+        api = authenticate(args)
 
     contracts = fetch_contracts(api, args)
     log_info(f"Found {len(contracts)} contract(s)", args)
@@ -57,7 +62,7 @@ def run(args) -> dict:
     return data
 
 
-def _authenticate(args) -> FraenkAPI:
+def authenticate(args) -> FraenkAPI:
     """Authenticate and return API client"""
     username, password = load_credentials()
     api = FraenkAPI()
@@ -69,9 +74,8 @@ def fetch_contracts(api: FraenkAPI | None, args) -> list:
     """Fetch contracts from API or fixtures"""
     if api is None:
         log_info("Loading mock contracts...", args)
-        contracts = load_fixture("contracts.json")
-        assert isinstance(contracts, list)
-        return contracts
+        contract = load_fixture("contracts.json")
+        return [contract]
 
     log_info("\nFetching contracts...", args)
     try:
@@ -84,9 +88,7 @@ def fetch_data_consumption(api: FraenkAPI | None, args) -> dict:
     """Fetch data consumption from API or fixtures"""
     if api is None:
         log_info("Loading mock data consumption...", args)
-        data = load_fixture("data_consumption.json")
-        assert isinstance(data, dict)
-        return data
+        return load_fixture("data_consumption.json")
 
     log_info("Fetching data consumption...", args)
     try:

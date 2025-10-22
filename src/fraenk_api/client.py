@@ -18,7 +18,7 @@ class FraenkAPI:
         self.customer_id: Optional[str] = None
         self.contract_id: Optional[str] = None
 
-    def _base_headers(self):
+    def base_headers(self):
         """Standard headers without authentication"""
         return {
             "X-Tenant": "fraenk",
@@ -29,16 +29,16 @@ class FraenkAPI:
             "X-App-Version": "1.13.9",
         }
 
-    def _auth_headers(self):
+    def auth_headers(self):
         """Headers with Bearer token"""
-        headers = self._base_headers()
+        headers = self.base_headers()
         if self.access_token:
             headers["Authorization"] = f"Bearer {self.access_token}"
         return headers
 
     def login_initiate(self, username: str, password: str) -> dict:
         """Step 1: Initiate login - SMS code will be sent (MFA)"""
-        headers = self._base_headers()
+        headers = self.base_headers()
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
         response = requests.post(
@@ -69,7 +69,7 @@ class FraenkAPI:
         self, username: str, password: str, mtan: str, mfa_token: str
     ) -> dict:
         """Step 2: Complete login with SMS code (MFA)"""
-        headers = self._base_headers()
+        headers = self.base_headers()
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
         response = requests.post(
@@ -113,7 +113,7 @@ class FraenkAPI:
         """Fetch all contracts"""
         response = requests.get(
             f"{self.BASE_URL}/customers/{self.customer_id}/contracts",
-            headers=self._auth_headers(),
+            headers=self.auth_headers(),
         )
         response.raise_for_status()
 
@@ -125,7 +125,7 @@ class FraenkAPI:
 
     def get_data_consumption(self, use_cache: bool = False) -> dict:
         """Fetch data consumption"""
-        headers = self._auth_headers()
+        headers = self.auth_headers()
         if not use_cache:
             headers["Cache-Control"] = "no-cache"
 

@@ -7,13 +7,13 @@ from importlib.resources import files
 from pathlib import Path
 
 
-def load_fixture(filename: str) -> dict | list:
+def load_fixture(filename: str) -> dict:
     """Load mock data from fixtures directory"""
     fixtures_dir = files("fraenk_api").joinpath("fixtures")
     fixture_file = fixtures_dir.joinpath(filename)
 
     try:
-        fixture_text = fixture_file.read_text(encoding='utf-8')
+        fixture_text = fixture_file.read_text(encoding="utf-8")
     except (FileNotFoundError, AttributeError):
         raise FileNotFoundError(f"Fixture not found: {filename}")
 
@@ -50,7 +50,16 @@ def load_credentials() -> tuple[str, str]:
         return creds
 
     # No credentials found anywhere
-    _raise_credentials_not_found_error()
+    raise SystemExit(
+        "Error: Credentials not found.\n"
+        "Please set credentials using one of:\n"
+        "  1. Environment variables: FRAENK_USERNAME and FRAENK_PASSWORD\n"
+        f"  2. Config file: {Path.home() / '.config' / 'fraenk' / 'credentials'}\n"
+        f"  3. Local file: {Path.cwd() / '.env'}\n"
+        "\nFile format:\n"
+        "  FRAENK_USERNAME=your_phone_number\n"
+        "  FRAENK_PASSWORD=your_password"
+    )
 
 
 def _load_credentials_from_env() -> tuple[str, str] | None:
@@ -108,20 +117,6 @@ def _load_credentials_from_local_env() -> tuple[str, str] | None:
         raise SystemExit(f"Error loading credentials from {env_path}: {e}") from e
 
 
-def _raise_credentials_not_found_error():
-    """Raise SystemExit with helpful error message about missing credentials."""
-    raise SystemExit(
-        "Error: Credentials not found.\n"
-        "Please set credentials using one of:\n"
-        "  1. Environment variables: FRAENK_USERNAME and FRAENK_PASSWORD\n"
-        f"  2. Config file: {Path.home() / '.config' / 'fraenk' / 'credentials'}\n"
-        f"  3. Local file: {Path.cwd() / '.env'}\n"
-        "\nFile format:\n"
-        "  FRAENK_USERNAME=your_phone_number\n"
-        "  FRAENK_PASSWORD=your_password"
-    )
-
-
 def _parse_credentials_file(path: Path) -> tuple[str, str] | None:
     """Parse credentials from a file in KEY=value format.
 
@@ -137,19 +132,19 @@ def _parse_credentials_file(path: Path) -> tuple[str, str] | None:
     username = None
     password = None
 
-    with path.open('r', encoding='utf-8') as f:
+    with path.open("r", encoding="utf-8") as f:
         for line_num, line in enumerate(f, 1):
             line = line.strip()
 
             # Skip empty lines and comments
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
 
             # Parse KEY=value
-            if '=' not in line:
+            if "=" not in line:
                 raise ValueError(f"Invalid format at line {line_num}: {line}")
 
-            key, _, value = line.partition('=')
+            key, _, value = line.partition("=")
             key = key.strip()
             value = value.strip()
 
@@ -171,8 +166,13 @@ def _parse_credentials_file(path: Path) -> tuple[str, str] | None:
     return None
 
 
-def display_data_consumption(data: dict):
-    """Display formatted data consumption information"""
+def print_consumption_as_json(data: dict):
+    """Print consumption data as formatted JSON"""
+    print(json.dumps(data, indent=2, ensure_ascii=False))
+
+
+def print_consumption(data: dict):
+    """Print consumption data in human-readable format"""
     print("\n" + "=" * 50)
     print("📱 FRAENK DATA CONSUMPTION")
     print("=" * 50)
@@ -202,13 +202,6 @@ def display_data_consumption(data: dict):
 # ============================================================================
 # OUTPUT HELPERS
 # ============================================================================
-
-def output_data(data: dict, args):
-    """Output data in requested format"""
-    if args.json:
-        print(json.dumps(data, indent=2, ensure_ascii=False))
-    else:
-        display_data_consumption(data)
 
 
 def log_info(message: str, args):
