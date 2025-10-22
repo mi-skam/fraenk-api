@@ -17,3 +17,5 @@ fraenk-api-*.json
 
 # Android App 
 sources/
+
+security-pocs/

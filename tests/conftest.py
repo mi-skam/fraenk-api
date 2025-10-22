@@ -1,5 +1,6 @@
 """Shared pytest fixtures for the Fraenk API test suite."""
 
+import os
 import json
 import base64
 from pathlib import Path
@@ -175,10 +176,23 @@ def fixture_consumption() -> Dict[str, Any]:
 
 @pytest.fixture
 def clean_env(monkeypatch):
-    """Remove Fraenk environment variables."""
+    """Remove Fraenk environment variables and isolate os.environ modifications."""
+    # Save original environment state
+    original_env = os.environ.copy()
+
+    # Remove Fraenk credentials from the test environment
     monkeypatch.delenv("FRAENK_USERNAME", raising=False)
     monkeypatch.delenv("FRAENK_PASSWORD", raising=False)
-    return monkeypatch
+
+    yield monkeypatch
+
+    # Restore original environment after test
+    for key in list(os.environ.keys()):
+        if key.startswith("FRAENK_"):
+            if key in original_env:
+                os.environ[key] = original_env[key]
+            else:
+                os.environ.pop(key, None)
 
 
 @pytest.fixture

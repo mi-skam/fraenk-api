@@ -27,40 +27,44 @@ uv run python -m fraenk_api
 
 ### Setup
 
-**Credentials Configuration (Fallback Chain)**
+**Credentials Configuration**
 
-The CLI loads credentials from multiple sources with the following priority:
-1. **Environment variables** (highest priority) - Best for CI/automation
-2. **Config file at `~/.config/fraenk/credentials`** - Best for installed usage
-3. **.env in current directory** (lowest priority) - Best for development
+The CLI loads credentials automatically from multiple sources (in priority order):
 
-All sources use the same KEY=VALUE format:
+1. **Environment variables** (highest priority)
+   ```bash
+   export FRAENK_USERNAME=your_phone_number
+   export FRAENK_PASSWORD=your_password
+   ```
+
+2. **User config file**: `~/.config/fraenk/credentials` (recommended)
+   ```bash
+   mkdir -p ~/.config/fraenk
+   cat > ~/.config/fraenk/credentials << EOF
+   FRAENK_USERNAME=your_phone_number
+   FRAENK_PASSWORD=your_password
+   EOF
+   chmod 600 ~/.config/fraenk/credentials
+   ```
+
+3. **Local .env file**: `./.env` (convenient for development)
+   ```bash
+   cat > .env << EOF
+   FRAENK_USERNAME=your_phone_number
+   FRAENK_PASSWORD=your_password
+   EOF
+   ```
+
+**Credential file format:**
+- Simple `KEY=value` format (one per line)
+- Supports comments (lines starting with `#`)
+- Values can be quoted with `"` or `'` (optional)
+- Empty lines are ignored
+
+**Helper script for shell environments:**
+The `load_env.sh` script can set environment variables from config files:
 ```bash
-FRAENK_USERNAME=your_phone_number
-FRAENK_PASSWORD=your_password
-```
-
-**Development setup:**
-```bash
-# Configure credentials in .env
-cp .env.example .env
-# Then edit .env with FRAENK_USERNAME and FRAENK_PASSWORD
-```
-
-**Installed usage:**
-```bash
-# Create config directory and file
-mkdir -p ~/.config/fraenk
-echo "FRAENK_USERNAME=your_phone_number" > ~/.config/fraenk/credentials
-echo "FRAENK_PASSWORD=your_password" >> ~/.config/fraenk/credentials
-chmod 600 ~/.config/fraenk/credentials  # Recommended for security
-```
-
-**CI/Automation:**
-```bash
-# Set environment variables directly
-export FRAENK_USERNAME=your_phone_number
-export FRAENK_PASSWORD=your_password
+source load_env.sh  # Loads from ~/.config/fraenk/credentials or .env
 ```
 
 Dependencies are managed via pyproject.toml. No manual installation needed with uv.
@@ -70,9 +74,10 @@ Dependencies are managed via pyproject.toml. No manual installation needed with 
 ### Package Structure (src layout)
 - **src/fraenk_api/client.py**: Core `FraenkAPI` class with authentication and data fetching
 - **src/fraenk_api/cli.py**: CLI implementation with argparse (includes dry-run fixture support)
-- **src/fraenk_api/utils.py**: Helper functions (display formatting, .env loading)
+- **src/fraenk_api/utils.py**: Helper functions (display formatting)
 - **src/fraenk_api/__init__.py**: Package exports
 - **src/fraenk_api/__main__.py**: Entry point for `python -m fraenk_api`
+- **load_env.sh**: Optional helper script to load credentials from files
 
 ### Console Script
 Entry point defined in pyproject.toml: `fraenk = "fraenk_api.cli:main"`

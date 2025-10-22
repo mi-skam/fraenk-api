@@ -37,21 +37,21 @@ class TestBaseHeaders:
     def test_base_headers_returns_correct_structure(self, mock_api_headers):
         """Test that _base_headers returns all required Android app headers."""
         client = FraenkAPI()
-        headers = client._base_headers()
+        headers = client.base_headers()
 
         assert headers == mock_api_headers
 
     def test_base_headers_contains_required_tenant(self):
         """Test that X-Tenant header is set to fraenk."""
         client = FraenkAPI()
-        headers = client._base_headers()
+        headers = client.base_headers()
 
         assert headers["X-Tenant"] == "fraenk"
 
     def test_base_headers_mimics_android_app(self):
         """Test that headers mimic Android app for API compatibility."""
         client = FraenkAPI()
-        headers = client._base_headers()
+        headers = client.base_headers()
 
         assert headers["X-App-OS"] == "Android"
         assert headers["X-App-Device"] == "Python-Client"
@@ -62,7 +62,7 @@ class TestBaseHeaders:
     def test_base_headers_no_authorization(self):
         """Test that _base_headers does not include Authorization header."""
         client = FraenkAPI()
-        headers = client._base_headers()
+        headers = client.base_headers()
 
         assert "Authorization" not in headers
 
@@ -73,7 +73,7 @@ class TestAuthHeaders:
     def test_auth_headers_without_token(self, mock_api_headers):
         """Test that _auth_headers returns base headers when no token is set."""
         client = FraenkAPI()
-        headers = client._auth_headers()
+        headers = client.auth_headers()
 
         assert headers == mock_api_headers
         assert "Authorization" not in headers
@@ -82,16 +82,19 @@ class TestAuthHeaders:
         """Test that _auth_headers includes Bearer token when access_token is set."""
         client = FraenkAPI()
         client.access_token = "test-token-abc123"
-        headers = client._auth_headers()
+        headers = client.auth_headers()
 
-        expected_headers = {**mock_api_headers, "Authorization": "Bearer test-token-abc123"}
+        expected_headers = {
+            **mock_api_headers,
+            "Authorization": "Bearer test-token-abc123",
+        }
         assert headers == expected_headers
 
     def test_auth_headers_bearer_format(self):
         """Test that Authorization header uses correct Bearer token format."""
         client = FraenkAPI()
         client.access_token = "my-jwt-token"
-        headers = client._auth_headers()
+        headers = client.auth_headers()
 
         assert headers["Authorization"] == "Bearer my-jwt-token"
 
@@ -99,7 +102,7 @@ class TestAuthHeaders:
         """Test that _auth_headers includes all base headers."""
         client = FraenkAPI()
         client.access_token = "token"
-        headers = client._auth_headers()
+        headers = client.auth_headers()
 
         assert "X-Tenant" in headers
         assert "X-App-OS" in headers
@@ -118,7 +121,7 @@ class TestLoginInitiate:
             responses.POST,
             f"{client.BASE_URL}/login",
             json=mock_mfa_response,
-            status=401
+            status=401,
         )
 
         result = client.login_initiate("0151123456789", "password123")
@@ -136,7 +139,7 @@ class TestLoginInitiate:
             responses.POST,
             f"{client.BASE_URL}/login",
             json={"error": "mfa_required", "mfa_token": "token"},
-            status=401
+            status=401,
         )
 
         client.login_initiate("testuser", "testpass")
@@ -157,7 +160,7 @@ class TestLoginInitiate:
             responses.POST,
             f"{client.BASE_URL}/login",
             json={"error": "mfa_required", "mfa_token": "token"},
-            status=401
+            status=401,
         )
 
         client.login_initiate("user", "pass")
@@ -173,10 +176,7 @@ class TestLoginInitiate:
 
         auth_response = {"access_token": "token", "refresh_token": "refresh"}
         responses.add(
-            responses.POST,
-            f"{client.BASE_URL}/login",
-            json=auth_response,
-            status=200
+            responses.POST, f"{client.BASE_URL}/login", json=auth_response, status=200
         )
 
         result = client.login_initiate("user", "pass")
@@ -192,7 +192,7 @@ class TestLoginInitiate:
             responses.POST,
             f"{client.BASE_URL}/login",
             json={"error": "invalid_credentials"},
-            status=401
+            status=401,
         )
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -207,7 +207,7 @@ class TestLoginInitiate:
             responses.POST,
             f"{client.BASE_URL}/login",
             json={"error": "server_error"},
-            status=500
+            status=500,
         )
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -222,7 +222,7 @@ class TestLoginInitiate:
             responses.POST,
             f"{client.BASE_URL}/login",
             json={"error": "forbidden"},
-            status=403
+            status=403,
         )
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -236,7 +236,7 @@ class TestLoginInitiate:
         responses.add(
             responses.POST,
             f"{client.BASE_URL}/login",
-            body=requests.exceptions.ConnectionError("Network unreachable")
+            body=requests.exceptions.ConnectionError("Network unreachable"),
         )
 
         with pytest.raises(requests.exceptions.ConnectionError):
@@ -250,7 +250,7 @@ class TestLoginInitiate:
         responses.add(
             responses.POST,
             f"{client.BASE_URL}/login",
-            body=requests.exceptions.Timeout("Request timeout")
+            body=requests.exceptions.Timeout("Request timeout"),
         )
 
         with pytest.raises(requests.exceptions.Timeout):
@@ -265,7 +265,7 @@ class TestLoginInitiate:
             responses.POST,
             f"{client.BASE_URL}/login",
             body="not valid json",
-            status=401
+            status=401,
         )
 
         with pytest.raises(requests.exceptions.JSONDecodeError):
@@ -284,7 +284,7 @@ class TestLoginComplete:
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json=mock_login_response,
-            status=200
+            status=200,
         )
 
         result = client.login_complete("user", "pass", "123456", "mfa-token")
@@ -302,7 +302,7 @@ class TestLoginComplete:
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json=mock_login_response,
-            status=200
+            status=200,
         )
 
         client.login_complete("user", "pass", "123456", "mfa-token")
@@ -319,7 +319,7 @@ class TestLoginComplete:
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json={"access_token": jwt, "refresh_token": "refresh"},
-            status=200
+            status=200,
         )
 
         client.login_complete("testuser", "testpass", "654321", "test-mfa-token")
@@ -340,7 +340,7 @@ class TestLoginComplete:
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json={"access_token": jwt, "refresh_token": "refresh"},
-            status=200
+            status=200,
         )
 
         client.login_complete("user", "pass", "123456", "mfa-token")
@@ -359,7 +359,7 @@ class TestLoginComplete:
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json={"access_token": jwt, "refresh_token": "refresh"},
-            status=200
+            status=200,
         )
 
         client.login_complete("user", "pass", "123456", "mfa-token")
@@ -376,7 +376,7 @@ class TestLoginComplete:
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json={"access_token": jwt, "refresh_token": "refresh"},
-            status=200
+            status=200,
         )
 
         client.login_complete("user", "pass", "123456", "mfa-token")
@@ -392,15 +392,19 @@ class TestLoginComplete:
         header = {"alg": "RS256", "typ": "JWT"}
         payload = {"sub": "f:uuid:111", "iat": 1234567890}
 
-        header_b64 = base64.urlsafe_b64encode(json.dumps(header).encode()).decode().rstrip('=')
-        payload_b64 = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip('=')
+        header_b64 = (
+            base64.urlsafe_b64encode(json.dumps(header).encode()).decode().rstrip("=")
+        )
+        payload_b64 = (
+            base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
+        )
         jwt = f"{header_b64}.{payload_b64}.signature"
 
         responses.add(
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json={"access_token": jwt, "refresh_token": "refresh"},
-            status=200
+            status=200,
         )
 
         client.login_complete("user", "pass", "123456", "mfa-token")
@@ -416,7 +420,7 @@ class TestLoginComplete:
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json={"error": "invalid_mfa_code"},
-            status=401
+            status=401,
         )
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -431,7 +435,7 @@ class TestLoginComplete:
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json={"error": "forbidden"},
-            status=403
+            status=403,
         )
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -446,7 +450,7 @@ class TestLoginComplete:
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json={"error": "server_error"},
-            status=500
+            status=500,
         )
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -462,7 +466,7 @@ class TestLoginComplete:
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json={"access_token": "only-one-part", "refresh_token": "refresh"},
-            status=200
+            status=200,
         )
 
         with pytest.raises(IndexError):
@@ -479,7 +483,7 @@ class TestLoginComplete:
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json={"access_token": invalid_jwt, "refresh_token": "refresh"},
-            status=200
+            status=200,
         )
 
         with pytest.raises(Exception):  # base64 decode error
@@ -496,7 +500,7 @@ class TestLoginComplete:
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json={"access_token": invalid_jwt, "refresh_token": "refresh"},
-            status=200
+            status=200,
         )
 
         with pytest.raises(json.JSONDecodeError):
@@ -510,7 +514,7 @@ class TestLoginComplete:
         responses.add(
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
-            body=requests.exceptions.ConnectionError("Network unreachable")
+            body=requests.exceptions.ConnectionError("Network unreachable"),
         )
 
         with pytest.raises(requests.exceptions.ConnectionError):
@@ -531,7 +535,7 @@ class TestGetContracts:
             responses.GET,
             f"{client.BASE_URL}/customers/7555659511/contracts",
             json=mock_contracts_response,
-            status=200
+            status=200,
         )
 
         result = client.get_contracts()
@@ -540,7 +544,9 @@ class TestGetContracts:
         assert len(result) == 2
 
     @responses.activate
-    def test_get_contracts_sets_contract_id_from_first_contract(self, mock_contracts_response):
+    def test_get_contracts_sets_contract_id_from_first_contract(
+        self, mock_contracts_response
+    ):
         """Test that get_contracts sets contract_id to first contract's ID."""
         client = FraenkAPI()
         client.access_token = "valid-token"
@@ -550,7 +556,7 @@ class TestGetContracts:
             responses.GET,
             f"{client.BASE_URL}/customers/7555659511/contracts",
             json=mock_contracts_response,
-            status=200
+            status=200,
         )
 
         client.get_contracts()
@@ -569,7 +575,7 @@ class TestGetContracts:
             responses.GET,
             f"{client.BASE_URL}/customers/7555659511/contracts",
             json=[],
-            status=200
+            status=200,
         )
 
         result = client.get_contracts()
@@ -588,7 +594,7 @@ class TestGetContracts:
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts",
             json=[],
-            status=200
+            status=200,
         )
 
         client.get_contracts()
@@ -608,7 +614,7 @@ class TestGetContracts:
             responses.GET,
             f"{client.BASE_URL}/customers/9999999999/contracts",
             json=[],
-            status=200
+            status=200,
         )
 
         client.get_contracts()
@@ -627,7 +633,7 @@ class TestGetContracts:
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts",
             json={"error": "unauthorized"},
-            status=401
+            status=401,
         )
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -644,7 +650,7 @@ class TestGetContracts:
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts",
             json={"error": "forbidden"},
-            status=403
+            status=403,
         )
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -661,7 +667,7 @@ class TestGetContracts:
             responses.GET,
             f"{client.BASE_URL}/customers/nonexistent/contracts",
             json={"error": "not_found"},
-            status=404
+            status=404,
         )
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -678,7 +684,7 @@ class TestGetContracts:
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts",
             json={"error": "server_error"},
-            status=500
+            status=500,
         )
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -694,7 +700,7 @@ class TestGetContracts:
         responses.add(
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts",
-            body=requests.exceptions.ConnectionError("Network error")
+            body=requests.exceptions.ConnectionError("Network error"),
         )
 
         with pytest.raises(requests.exceptions.ConnectionError):
@@ -716,7 +722,7 @@ class TestGetDataConsumption:
             responses.GET,
             f"{client.BASE_URL}/customers/7555659511/contracts/12345678/dataconsumption",
             json=mock_consumption_response,
-            status=200
+            status=200,
         )
 
         result = client.get_data_consumption()
@@ -737,7 +743,7 @@ class TestGetDataConsumption:
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts/67890/dataconsumption",
             json={},
-            status=200
+            status=200,
         )
 
         client.get_data_consumption(use_cache=False)
@@ -757,7 +763,7 @@ class TestGetDataConsumption:
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts/67890/dataconsumption",
             json={},
-            status=200
+            status=200,
         )
 
         client.get_data_consumption(use_cache=True)
@@ -777,7 +783,7 @@ class TestGetDataConsumption:
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts/67890/dataconsumption",
             json={},
-            status=200
+            status=200,
         )
 
         client.get_data_consumption()
@@ -797,7 +803,7 @@ class TestGetDataConsumption:
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts/67890/dataconsumption",
             json={},
-            status=200
+            status=200,
         )
 
         client.get_data_consumption()
@@ -818,7 +824,7 @@ class TestGetDataConsumption:
             responses.GET,
             f"{client.BASE_URL}/customers/1111111111/contracts/2222222222/dataconsumption",
             json={},
-            status=200
+            status=200,
         )
 
         client.get_data_consumption()
@@ -839,7 +845,7 @@ class TestGetDataConsumption:
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts/67890/dataconsumption",
             json={"error": "unauthorized"},
-            status=401
+            status=401,
         )
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -857,7 +863,7 @@ class TestGetDataConsumption:
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts/67890/dataconsumption",
             json={"error": "forbidden"},
-            status=403
+            status=403,
         )
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -875,7 +881,7 @@ class TestGetDataConsumption:
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts/nonexistent/dataconsumption",
             json={"error": "not_found"},
-            status=404
+            status=404,
         )
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -893,7 +899,7 @@ class TestGetDataConsumption:
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts/67890/dataconsumption",
             json={"error": "server_error"},
-            status=500
+            status=500,
         )
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -910,7 +916,7 @@ class TestGetDataConsumption:
         responses.add(
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts/67890/dataconsumption",
-            body=requests.exceptions.ConnectionError("Network error")
+            body=requests.exceptions.ConnectionError("Network error"),
         )
 
         with pytest.raises(requests.exceptions.ConnectionError):
@@ -927,7 +933,7 @@ class TestGetDataConsumption:
         responses.add(
             responses.GET,
             f"{client.BASE_URL}/customers/12345/contracts/67890/dataconsumption",
-            body=requests.exceptions.Timeout("Request timeout")
+            body=requests.exceptions.Timeout("Request timeout"),
         )
 
         with pytest.raises(requests.exceptions.Timeout):
@@ -947,7 +953,7 @@ class TestIntegrationScenarios:
             responses.POST,
             f"{client.BASE_URL}/login",
             json=mock_mfa_response,
-            status=401
+            status=401,
         )
 
         mfa_response = client.login_initiate("user", "pass")
@@ -958,17 +964,21 @@ class TestIntegrationScenarios:
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json=mock_login_response,
-            status=200
+            status=200,
         )
 
-        auth = client.login_complete("user", "pass", "123456", mfa_response["mfa_token"])
+        auth = client.login_complete(
+            "user", "pass", "123456", mfa_response["mfa_token"]
+        )
 
         assert client.access_token is not None
         assert client.refresh_token is not None
         assert client.customer_id == "7555659511"
 
     @responses.activate
-    def test_full_data_retrieval_flow(self, mock_login_response, mock_contracts_response, mock_consumption_response):
+    def test_full_data_retrieval_flow(
+        self, mock_login_response, mock_contracts_response, mock_consumption_response
+    ):
         """Test complete flow from login to data consumption retrieval."""
         client = FraenkAPI()
 
@@ -977,7 +987,7 @@ class TestIntegrationScenarios:
             responses.POST,
             f"{client.BASE_URL}/login-with-mfa",
             json=mock_login_response,
-            status=200
+            status=200,
         )
         client.login_complete("user", "pass", "123456", "mfa-token")
 
@@ -986,7 +996,7 @@ class TestIntegrationScenarios:
             responses.GET,
             f"{client.BASE_URL}/customers/7555659511/contracts",
             json=mock_contracts_response,
-            status=200
+            status=200,
         )
         contracts = client.get_contracts()
         assert len(contracts) == 2
@@ -997,7 +1007,7 @@ class TestIntegrationScenarios:
             responses.GET,
             f"{client.BASE_URL}/customers/7555659511/contracts/12345678/dataconsumption",
             json=mock_consumption_response,
-            status=200
+            status=200,
         )
         consumption = client.get_data_consumption()
         assert "passes" in consumption
@@ -1005,6 +1015,7 @@ class TestIntegrationScenarios:
 
 
 # Helper functions
+
 
 def _create_jwt_token(sub_value: str) -> str:
     """Create a valid JWT token with specified sub field value.
@@ -1016,15 +1027,14 @@ def _create_jwt_token(sub_value: str) -> str:
         Valid JWT token string in format header.payload.signature
     """
     header = {"alg": "RS256", "typ": "JWT"}
-    payload = {
-        "sub": sub_value,
-        "iat": 1234567890,
-        "exp": 1234567890,
-        "iss": "fraenk"
-    }
+    payload = {"sub": sub_value, "iat": 1234567890, "exp": 1234567890, "iss": "fraenk"}
 
-    header_b64 = base64.urlsafe_b64encode(json.dumps(header).encode()).decode().rstrip('=')
-    payload_b64 = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip('=')
+    header_b64 = (
+        base64.urlsafe_b64encode(json.dumps(header).encode()).decode().rstrip("=")
+    )
+    payload_b64 = (
+        base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
+    )
     signature = "fake-signature"
 
     return f"{header_b64}.{payload_b64}.{signature}"

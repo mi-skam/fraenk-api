@@ -32,15 +32,20 @@ class TestLoadCredentials:
         """Test loading credentials from .env file in current directory."""
         # Create .env file
         env_file = tmp_path / ".env"
-        env_file.write_text("FRAENK_USERNAME=dotenv_user\nFRAENK_PASSWORD=dotenv_pass\n")
+        env_file.write_text(
+            "FRAENK_USERNAME=dotenv_user\nFRAENK_PASSWORD=dotenv_pass\n"
+        )
 
         with patch("pathlib.Path.cwd") as mock_cwd:
             mock_cwd.return_value = tmp_path
+            # Mock home to prevent loading from ~/.config
+            with patch("pathlib.Path.home") as mock_home:
+                mock_home.return_value = tmp_path / "fake_home"
 
-            utils.load_credentials()
+                utils.load_credentials()
 
-            assert os.environ["FRAENK_USERNAME"] == "dotenv_user"
-            assert os.environ["FRAENK_PASSWORD"] == "dotenv_pass"
+                assert os.environ["FRAENK_USERNAME"] == "dotenv_user"
+                assert os.environ["FRAENK_PASSWORD"] == "dotenv_pass"
 
     def test_load_credentials_from_config(self, monkeypatch, clean_env, tmp_path):
         """Test loading credentials from ~/.config/fraenk/credentials."""
@@ -48,7 +53,9 @@ class TestLoadCredentials:
         config_dir = tmp_path / ".config" / "fraenk"
         config_dir.mkdir(parents=True)
         config_file = config_dir / "credentials"
-        config_file.write_text("FRAENK_USERNAME=config_user\nFRAENK_PASSWORD=config_pass\n")
+        config_file.write_text(
+            "FRAENK_USERNAME=config_user\nFRAENK_PASSWORD=config_pass\n"
+        )
 
         with patch("pathlib.Path.home") as mock_home:
             mock_home.return_value = tmp_path
@@ -60,7 +67,9 @@ class TestLoadCredentials:
                 assert os.environ["FRAENK_USERNAME"] == "config_user"
                 assert os.environ["FRAENK_PASSWORD"] == "config_pass"
 
-    def test_load_credentials_priority_env_over_config(self, monkeypatch, clean_env, tmp_path):
+    def test_load_credentials_priority_env_over_config(
+        self, monkeypatch, clean_env, tmp_path
+    ):
         """Test that environment variables take priority over config file."""
         # Set env vars
         monkeypatch.setenv("FRAENK_USERNAME", "env_user")
@@ -70,7 +79,9 @@ class TestLoadCredentials:
         config_dir = tmp_path / ".config" / "fraenk"
         config_dir.mkdir(parents=True)
         config_file = config_dir / "credentials"
-        config_file.write_text("FRAENK_USERNAME=config_user\nFRAENK_PASSWORD=config_pass\n")
+        config_file.write_text(
+            "FRAENK_USERNAME=config_user\nFRAENK_PASSWORD=config_pass\n"
+        )
 
         with patch("pathlib.Path.home") as mock_home:
             mock_home.return_value = tmp_path
@@ -81,16 +92,22 @@ class TestLoadCredentials:
             assert os.environ["FRAENK_USERNAME"] == "env_user"
             assert os.environ["FRAENK_PASSWORD"] == "env_pass"
 
-    def test_load_credentials_priority_config_over_dotenv(self, monkeypatch, clean_env, tmp_path):
+    def test_load_credentials_priority_config_over_dotenv(
+        self, monkeypatch, clean_env, tmp_path
+    ):
         """Test that config file takes priority over .env file."""
         # Create both files
         env_file = tmp_path / ".env"
-        env_file.write_text("FRAENK_USERNAME=dotenv_user\nFRAENK_PASSWORD=dotenv_pass\n")
+        env_file.write_text(
+            "FRAENK_USERNAME=dotenv_user\nFRAENK_PASSWORD=dotenv_pass\n"
+        )
 
         config_dir = tmp_path / ".config" / "fraenk"
         config_dir.mkdir(parents=True)
         config_file = config_dir / "credentials"
-        config_file.write_text("FRAENK_USERNAME=config_user\nFRAENK_PASSWORD=config_pass\n")
+        config_file.write_text(
+            "FRAENK_USERNAME=config_user\nFRAENK_PASSWORD=config_pass\n"
+        )
 
         with patch("pathlib.Path.home") as mock_home:
             mock_home.return_value = tmp_path
@@ -123,12 +140,15 @@ class TestLoadCredentials:
 
         with patch("pathlib.Path.cwd") as mock_cwd:
             mock_cwd.return_value = tmp_path
+            # Mock home to prevent loading from ~/.config
+            with patch("pathlib.Path.home") as mock_home:
+                mock_home.return_value = tmp_path / "fake_home"
 
-            utils.load_credentials()
+                utils.load_credentials()
 
-            # No credentials should be set
-            assert "FRAENK_USERNAME" not in os.environ
-            assert "FRAENK_PASSWORD" not in os.environ
+                # No credentials should be set
+                assert "FRAENK_USERNAME" not in os.environ
+                assert "FRAENK_PASSWORD" not in os.environ
 
     def test_load_credentials_empty_config(self, monkeypatch, clean_env, tmp_path):
         """Test loading from empty config file."""
@@ -147,7 +167,9 @@ class TestLoadCredentials:
             assert "FRAENK_USERNAME" not in os.environ
             assert "FRAENK_PASSWORD" not in os.environ
 
-    def test_load_credentials_malformed_env_file(self, monkeypatch, clean_env, tmp_path):
+    def test_load_credentials_malformed_env_file(
+        self, monkeypatch, clean_env, tmp_path
+    ):
         """Test loading from .env file with invalid syntax."""
         # Create .env with malformed lines
         env_file = tmp_path / ".env"
@@ -161,12 +183,15 @@ class TestLoadCredentials:
 
         with patch("pathlib.Path.cwd") as mock_cwd:
             mock_cwd.return_value = tmp_path
+            # Mock home to prevent loading from ~/.config
+            with patch("pathlib.Path.home") as mock_home:
+                mock_home.return_value = tmp_path / "fake_home"
 
-            utils.load_credentials()
+                utils.load_credentials()
 
-            # Valid lines should be loaded, invalid ones skipped
-            assert os.environ["FRAENK_USERNAME"] == "valid_user"
-            assert os.environ["FRAENK_PASSWORD"] == "valid_pass"
+                # Valid lines should be loaded, invalid ones skipped
+                assert os.environ["FRAENK_USERNAME"] == "valid_user"
+                assert os.environ["FRAENK_PASSWORD"] == "valid_pass"
 
     def test_load_credentials_sets_os_environ(self, monkeypatch, clean_env, tmp_path):
         """Test that load_credentials properly sets os.environ."""
@@ -175,18 +200,23 @@ class TestLoadCredentials:
 
         with patch("pathlib.Path.cwd") as mock_cwd:
             mock_cwd.return_value = tmp_path
+            # Mock home to prevent loading from ~/.config
+            with patch("pathlib.Path.home") as mock_home:
+                mock_home.return_value = tmp_path / "fake_home"
 
-            # Verify env vars not set before
-            assert "FRAENK_USERNAME" not in os.environ
-            assert "FRAENK_PASSWORD" not in os.environ
+                # Verify env vars not set before
+                assert "FRAENK_USERNAME" not in os.environ
+                assert "FRAENK_PASSWORD" not in os.environ
 
-            utils.load_credentials()
+                utils.load_credentials()
 
-            # Verify env vars are set after
-            assert os.environ["FRAENK_USERNAME"] == "test_user"
-            assert os.environ["FRAENK_PASSWORD"] == "test_pass"
+                # Verify env vars are set after
+                assert os.environ["FRAENK_USERNAME"] == "test_user"
+                assert os.environ["FRAENK_PASSWORD"] == "test_pass"
 
-    def test_load_credentials_no_override_existing(self, monkeypatch, clean_env, tmp_path):
+    def test_load_credentials_no_override_existing(
+        self, monkeypatch, clean_env, tmp_path
+    ):
         """Test that existing env vars are not overridden by files."""
         # Set existing env vars
         monkeypatch.setenv("FRAENK_USERNAME", "existing_user")
@@ -267,10 +297,7 @@ class TestParseEnvFile:
         """Test that comment lines are skipped."""
         env_file = tmp_path / "test.env"
         env_file.write_text(
-            "# This is a comment\n"
-            "KEY1=value1\n"
-            "# Another comment\n"
-            "KEY2=value2"
+            "# This is a comment\nKEY1=value1\n# Another comment\nKEY2=value2"
         )
 
         result = utils._parse_env_file(env_file)
@@ -280,12 +307,7 @@ class TestParseEnvFile:
     def test_parse_env_file_empty_lines(self, tmp_path):
         """Test that empty lines are skipped."""
         env_file = tmp_path / "test.env"
-        env_file.write_text(
-            "KEY1=value1\n"
-            "\n"
-            "\n"
-            "KEY2=value2"
-        )
+        env_file.write_text("KEY1=value1\n\n\nKEY2=value2")
 
         result = utils._parse_env_file(env_file)
 
@@ -294,11 +316,7 @@ class TestParseEnvFile:
     def test_parse_env_file_no_equals(self, tmp_path):
         """Test that lines without equals are skipped."""
         env_file = tmp_path / "test.env"
-        env_file.write_text(
-            "KEY1=value1\n"
-            "INVALID LINE\n"
-            "KEY2=value2"
-        )
+        env_file.write_text("KEY1=value1\nINVALID LINE\nKEY2=value2")
 
         result = utils._parse_env_file(env_file)
 
@@ -325,12 +343,12 @@ class TestParseEnvFile:
     def test_parse_env_file_mixed_quotes(self, tmp_path):
         """Test parsing with mismatched quotes."""
         env_file = tmp_path / "test.env"
-        env_file.write_text('KEY="value\'')
+        env_file.write_text("KEY=\"value'")
 
         result = utils._parse_env_file(env_file)
 
         # Mismatched quotes are not removed
-        assert result == {"KEY": '"value\''}
+        assert result == {"KEY": "\"value'"}
 
     def test_parse_env_file_quote_removal_double(self, tmp_path):
         """Test that matching double quotes are removed."""
@@ -371,14 +389,14 @@ class TestParseEnvFile:
         assert result == {
             "FRAENK_USERNAME": "0151123456789",
             "FRAENK_PASSWORD": "secret123",
-            "OTHER_VAR": "other_value"
+            "OTHER_VAR": "other_value",
         }
 
     def test_parse_env_file_special_characters(self, tmp_path):
         """Test parsing with special characters in values."""
         env_file = tmp_path / "test.env"
         env_file.write_text(
-            'KEY1=value!@#$%^&*()\n'
+            "KEY1=value!@#$%^&*()\n"
             'KEY2="value with spaces and $pecial"\n'
             "KEY3='value with \\n newline'"
         )
@@ -388,16 +406,13 @@ class TestParseEnvFile:
         assert result == {
             "KEY1": "value!@#$%^&*()",
             "KEY2": "value with spaces and $pecial",
-            "KEY3": "value with \\n newline"
+            "KEY3": "value with \\n newline",
         }
 
     def test_parse_env_file_export_prefix(self, tmp_path):
         """Test parsing lines with 'export' prefix (common in shell scripts)."""
         env_file = tmp_path / "test.env"
-        env_file.write_text(
-            "export KEY1=value1\n"
-            "KEY2=value2"
-        )
+        env_file.write_text("export KEY1=value1\nKEY2=value2")
 
         result = utils._parse_env_file(env_file)
 
@@ -411,9 +426,11 @@ class TestDisplayDataConsumption:
     """Test display_data_consumption function."""
 
     @patch("builtins.print")
-    def test_display_data_consumption_valid_data(self, mock_print, mock_consumption_response):
+    def test_display_data_consumption_valid_data(
+        self, mock_print, mock_consumption_response
+    ):
         """Test displaying valid consumption data."""
-        utils.display_data_consumption(mock_consumption_response)
+        utils.print_consumption(mock_consumption_response)
 
         # Verify print was called multiple times
         assert mock_print.call_count > 0
@@ -431,15 +448,17 @@ class TestDisplayDataConsumption:
     def test_display_data_consumption_missing_customer(self, mock_print):
         """Test displaying data without customer field."""
         data = {
-            "passes": [{
-                "passName": "Test Pass",
-                "usedVolume": "1 GB",
-                "initialVolume": "10 GB",
-                "percentageConsumption": 10
-            }]
+            "passes": [
+                {
+                    "passName": "Test Pass",
+                    "usedVolume": "1 GB",
+                    "initialVolume": "10 GB",
+                    "percentageConsumption": 10,
+                }
+            ]
         }
 
-        utils.display_data_consumption(data)
+        utils.print_consumption(data)
 
         printed_output = " ".join(str(call) for call in mock_print.call_args_list)
         assert "N/A" in printed_output  # Should show N/A for missing customer info
@@ -447,14 +466,9 @@ class TestDisplayDataConsumption:
     @patch("builtins.print")
     def test_display_data_consumption_missing_msisdn(self, mock_print):
         """Test displaying data with customer but no msisdn."""
-        data = {
-            "customer": {
-                "contractType": "POST_PAID"
-            },
-            "passes": []
-        }
+        data = {"customer": {"contractType": "POST_PAID"}, "passes": []}
 
-        utils.display_data_consumption(data)
+        utils.print_consumption(data)
 
         printed_output = " ".join(str(call) for call in mock_print.call_args_list)
         assert "N/A" in printed_output  # Should show N/A for missing msisdn
@@ -462,14 +476,9 @@ class TestDisplayDataConsumption:
     @patch("builtins.print")
     def test_display_data_consumption_missing_contract_type(self, mock_print):
         """Test displaying data with customer but no contractType."""
-        data = {
-            "customer": {
-                "msisdn": "0151123456789"
-            },
-            "passes": []
-        }
+        data = {"customer": {"msisdn": "0151123456789"}, "passes": []}
 
-        utils.display_data_consumption(data)
+        utils.print_consumption(data)
 
         printed_output = " ".join(str(call) for call in mock_print.call_args_list)
         assert "N/A" in printed_output  # Should show N/A for missing contract type
@@ -478,14 +487,11 @@ class TestDisplayDataConsumption:
     def test_display_data_consumption_empty_passes(self, mock_print):
         """Test displaying data with empty passes list."""
         data = {
-            "customer": {
-                "msisdn": "0151123456789",
-                "contractType": "POST_PAID"
-            },
-            "passes": []
+            "customer": {"msisdn": "0151123456789", "contractType": "POST_PAID"},
+            "passes": [],
         }
 
-        utils.display_data_consumption(data)
+        utils.print_consumption(data)
 
         # Should still print header and customer info
         assert mock_print.call_count > 0
@@ -495,14 +501,9 @@ class TestDisplayDataConsumption:
     @patch("builtins.print")
     def test_display_data_consumption_missing_passes(self, mock_print):
         """Test displaying data without passes field."""
-        data = {
-            "customer": {
-                "msisdn": "0151123456789",
-                "contractType": "POST_PAID"
-            }
-        }
+        data = {"customer": {"msisdn": "0151123456789", "contractType": "POST_PAID"}}
 
-        utils.display_data_consumption(data)
+        utils.print_consumption(data)
 
         # Should handle gracefully
         assert mock_print.call_count > 0
@@ -512,16 +513,18 @@ class TestDisplayDataConsumption:
         """Test timestamp conversion to readable date."""
         data = {
             "customer": {"msisdn": "0151123456789", "contractType": "POST_PAID"},
-            "passes": [{
-                "passName": "Test Pass",
-                "usedVolume": "1 GB",
-                "initialVolume": "10 GB",
-                "percentageConsumption": 10,
-                "expiryTimestamp": 1761951599000  # Milliseconds timestamp
-            }]
+            "passes": [
+                {
+                    "passName": "Test Pass",
+                    "usedVolume": "1 GB",
+                    "initialVolume": "10 GB",
+                    "percentageConsumption": 10,
+                    "expiryTimestamp": 1761951599000,  # Milliseconds timestamp
+                }
+            ],
         }
 
-        utils.display_data_consumption(data)
+        utils.print_consumption(data)
 
         # Check that a formatted date is printed
         printed_output = " ".join(str(call) for call in mock_print.call_args_list)
@@ -534,16 +537,18 @@ class TestDisplayDataConsumption:
         """Test displaying pass without expiry timestamp."""
         data = {
             "customer": {"msisdn": "0151123456789", "contractType": "POST_PAID"},
-            "passes": [{
-                "passName": "Test Pass",
-                "usedVolume": "1 GB",
-                "initialVolume": "10 GB",
-                "percentageConsumption": 10
-                # No expiryTimestamp
-            }]
+            "passes": [
+                {
+                    "passName": "Test Pass",
+                    "usedVolume": "1 GB",
+                    "initialVolume": "10 GB",
+                    "percentageConsumption": 10,
+                    # No expiryTimestamp
+                }
+            ],
         }
 
-        utils.display_data_consumption(data)
+        utils.print_consumption(data)
 
         # Should handle missing timestamp gracefully
         assert mock_print.call_count > 0
@@ -553,16 +558,18 @@ class TestDisplayDataConsumption:
         """Test displaying pass with zero timestamp."""
         data = {
             "customer": {"msisdn": "0151123456789", "contractType": "POST_PAID"},
-            "passes": [{
-                "passName": "Test Pass",
-                "usedVolume": "1 GB",
-                "initialVolume": "10 GB",
-                "percentageConsumption": 10,
-                "expiryTimestamp": 0
-            }]
+            "passes": [
+                {
+                    "passName": "Test Pass",
+                    "usedVolume": "1 GB",
+                    "initialVolume": "10 GB",
+                    "percentageConsumption": 10,
+                    "expiryTimestamp": 0,
+                }
+            ],
         }
 
-        utils.display_data_consumption(data)
+        utils.print_consumption(data)
 
         # Should show epoch date (1970-01-01)
         printed_output = " ".join(str(call) for call in mock_print.call_args_list)
@@ -578,24 +585,24 @@ class TestDisplayDataConsumption:
                     "passName": "Pass 1",
                     "usedVolume": "1 GB",
                     "initialVolume": "10 GB",
-                    "percentageConsumption": 10
+                    "percentageConsumption": 10,
                 },
                 {
                     "passName": "Pass 2",
                     "usedVolume": "2 GB",
                     "initialVolume": "5 GB",
-                    "percentageConsumption": 40
+                    "percentageConsumption": 40,
                 },
                 {
                     "passName": "Pass 3",
                     "usedVolume": "3 GB",
                     "initialVolume": "3 GB",
-                    "percentageConsumption": 100
-                }
-            ]
+                    "percentageConsumption": 100,
+                },
+            ],
         }
 
-        utils.display_data_consumption(data)
+        utils.print_consumption(data)
 
         # All passes should be displayed
         printed_output = " ".join(str(call) for call in mock_print.call_args_list)
@@ -608,15 +615,17 @@ class TestDisplayDataConsumption:
         """Test displaying data with unicode characters."""
         data = {
             "customer": {"msisdn": "0151123456789", "contractType": "POST_PAID"},
-            "passes": [{
-                "passName": "Vertragsvolumen mit Emojis 🚀",
-                "usedVolume": "6,47 GB",
-                "initialVolume": "25 GB",
-                "percentageConsumption": 26
-            }]
+            "passes": [
+                {
+                    "passName": "Vertragsvolumen mit Emojis 🚀",
+                    "usedVolume": "6,47 GB",
+                    "initialVolume": "25 GB",
+                    "percentageConsumption": 26,
+                }
+            ],
         }
 
-        utils.display_data_consumption(data)
+        utils.print_consumption(data)
 
         # Unicode should be handled correctly
         printed_output = " ".join(str(call) for call in mock_print.call_args_list)
@@ -626,19 +635,18 @@ class TestDisplayDataConsumption:
     def test_display_data_consumption_none_values(self, mock_print):
         """Test displaying data with None values."""
         data = {
-            "customer": {
-                "msisdn": None,
-                "contractType": None
-            },
-            "passes": [{
-                "passName": "Test Pass",
-                "usedVolume": None,
-                "initialVolume": None,
-                "percentageConsumption": None
-            }]
+            "customer": {"msisdn": None, "contractType": None},
+            "passes": [
+                {
+                    "passName": "Test Pass",
+                    "usedVolume": None,
+                    "initialVolume": None,
+                    "percentageConsumption": None,
+                }
+            ],
         }
 
-        utils.display_data_consumption(data)
+        utils.print_consumption(data)
 
         # Should handle None values gracefully
         printed_output = " ".join(str(call) for call in mock_print.call_args_list)
@@ -646,41 +654,45 @@ class TestDisplayDataConsumption:
 
     @patch("builtins.print")
     def test_display_data_consumption_progress_bar(self, mock_print):
-        """Test that progress bar is displayed correctly."""
+        """Test that usage percentage is displayed correctly."""
         data = {
             "customer": {"msisdn": "0151123456789", "contractType": "POST_PAID"},
-            "passes": [{
-                "passName": "Test Pass",
-                "usedVolume": "5 GB",
-                "initialVolume": "10 GB",
-                "percentageConsumption": 50
-            }]
+            "passes": [
+                {
+                    "passName": "Test Pass",
+                    "usedVolume": "5 GB",
+                    "initialVolume": "10 GB",
+                    "percentageConsumption": 50,
+                }
+            ],
         }
 
-        utils.display_data_consumption(data)
+        utils.print_consumption(data)
 
-        # Check for progress bar characters
+        # Check for percentage display
         printed_output = " ".join(str(call) for call in mock_print.call_args_list)
-        assert "█" in printed_output or "▓" in printed_output or "[" in printed_output
+        assert "50%" in printed_output
 
     @patch("builtins.print")
     def test_display_data_consumption_formatting(self, mock_print):
         """Test overall formatting of the display."""
         data = {
             "customer": {"msisdn": "0151 - 12345678", "contractType": "POST_PAID"},
-            "passes": [{
-                "passName": "Monthly Data",
-                "type": "INCLUSIVE",
-                "usedVolume": "7.5 GB",
-                "usedBytes": 8053063680,
-                "initialVolume": "25 GB",
-                "initialVolumeBytes": 26843545600,
-                "percentageConsumption": 30,
-                "expiryTimestamp": 1761951599000
-            }]
+            "passes": [
+                {
+                    "passName": "Monthly Data",
+                    "type": "INCLUSIVE",
+                    "usedVolume": "7.5 GB",
+                    "usedBytes": 8053063680,
+                    "initialVolume": "25 GB",
+                    "initialVolumeBytes": 26843545600,
+                    "percentageConsumption": 30,
+                    "expiryTimestamp": 1761951599000,
+                }
+            ],
         }
 
-        utils.display_data_consumption(data)
+        utils.print_consumption(data)
 
         # Check that sections are printed
         printed_output = " ".join(str(call) for call in mock_print.call_args_list)
@@ -704,10 +716,10 @@ class TestDisplayDataConsumption:
         data = {
             "customer": {"msisdn": "0151123456789", "contractType": "POST_PAID"},
             "passes": [],
-            "bookableDataPassesAvailable": True
+            "bookableDataPassesAvailable": True,
         }
 
-        utils.display_data_consumption(data)
+        utils.print_consumption(data)
 
         # Bookable passes info might be displayed
         printed_output = " ".join(str(call) for call in mock_print.call_args_list)
