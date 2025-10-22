@@ -1,60 +1,174 @@
 """Utility functions for Fraenk API client."""
 
+import json
 import os
 from datetime import datetime
+from importlib.resources import files
 from pathlib import Path
 
 
-def load_credentials():
-    """Load credentials with fallback chain.
+def load_fixture(filename: str) -> dict | list:
+    """Load mock data from fixtures directory"""
+    fixtures_dir = files("fraenk_api").joinpath("fixtures")
+    fixture_file = fixtures_dir.joinpath(filename)
 
-    Priority (highest to lowest):
-    1. Environment variables (already set)
-    2. Config file at ~/.config/fraenk/credentials
-    3. .env file in current directory
+    try:
+        fixture_text = fixture_file.read_text(encoding='utf-8')
+    except (FileNotFoundError, AttributeError):
+        raise FileNotFoundError(f"Fixture not found: {filename}")
 
-    Does not fail - just loads what's available.
-    Actual validation happens in cli.py when checking for username/password.
-    """
-    credentials = {}
-
-    # Load .env from current directory (lowest priority)
-    env_file = Path.cwd() / ".env"
-    if env_file.exists():
-        credentials.update(_parse_env_file(env_file))
-
-    # Load config file (higher priority, overrides .env)
-    config_path = Path.home() / ".config" / "fraenk" / "credentials"
-    if config_path.exists():
-        credentials.update(_parse_env_file(config_path))
-
-    # Set in os.environ only if not already present (env vars have highest priority)
-    for key, value in credentials.items():
-        if key not in os.environ:
-            os.environ[key] = value
+    return json.loads(fixture_text)
 
 
-def _parse_env_file(file_path: Path) -> dict:
-    """Parse KEY=VALUE pairs from a file.
+def load_credentials() -> tuple[str, str]:
+    """Load credentials from environment or config files.
 
-    Args:
-        file_path: Path to the credentials file
+    Priority order:
+    1. Environment variables (FRAENK_USERNAME, FRAENK_PASSWORD)
+    2. ~/.config/fraenk/credentials
+    3. ./.env (current directory)
 
     Returns:
-        Dictionary of key-value pairs
+        tuple[str, str]: (username, password)
+
+    Raises:
+        SystemExit: If credentials cannot be found or loaded
     """
-    credentials = {}
-    with open(file_path, encoding="utf-8") as f:
-        for line in f:
+    # Try environment variables first
+    creds = _load_credentials_from_env()
+    if creds:
+        return creds
+
+    # Try user config file
+    creds = _load_credentials_from_user_config()
+    if creds:
+        return creds
+
+    # Try local .env file
+    creds = _load_credentials_from_local_env()
+    if creds:
+        return creds
+
+    # No credentials found anywhere
+    _raise_credentials_not_found_error()
+
+
+def _load_credentials_from_env() -> tuple[str, str] | None:
+    """Load credentials from environment variables.
+
+    Returns:
+        tuple[str, str] | None: (username, password) or None if not set
+    """
+    username = os.getenv("FRAENK_USERNAME")
+    password = os.getenv("FRAENK_PASSWORD")
+
+    if username and password:
+        return username, password
+
+    return None
+
+
+def _load_credentials_from_user_config() -> tuple[str, str] | None:
+    """Load credentials from ~/.config/fraenk/credentials.
+
+    Returns:
+        tuple[str, str] | None: (username, password) or None if file doesn't exist
+
+    Raises:
+        SystemExit: If file exists but cannot be read or parsed
+    """
+    config_path = Path.home() / ".config" / "fraenk" / "credentials"
+
+    if not config_path.exists():
+        return None
+
+    try:
+        return _parse_credentials_file(config_path)
+    except Exception as e:
+        raise SystemExit(f"Error loading credentials from {config_path}: {e}") from e
+
+
+def _load_credentials_from_local_env() -> tuple[str, str] | None:
+    """Load credentials from ./.env in current directory.
+
+    Returns:
+        tuple[str, str] | None: (username, password) or None if file doesn't exist
+
+    Raises:
+        SystemExit: If file exists but cannot be read or parsed
+    """
+    env_path = Path.cwd() / ".env"
+
+    if not env_path.exists():
+        return None
+
+    try:
+        return _parse_credentials_file(env_path)
+    except Exception as e:
+        raise SystemExit(f"Error loading credentials from {env_path}: {e}") from e
+
+
+def _raise_credentials_not_found_error():
+    """Raise SystemExit with helpful error message about missing credentials."""
+    raise SystemExit(
+        "Error: Credentials not found.\n"
+        "Please set credentials using one of:\n"
+        "  1. Environment variables: FRAENK_USERNAME and FRAENK_PASSWORD\n"
+        f"  2. Config file: {Path.home() / '.config' / 'fraenk' / 'credentials'}\n"
+        f"  3. Local file: {Path.cwd() / '.env'}\n"
+        "\nFile format:\n"
+        "  FRAENK_USERNAME=your_phone_number\n"
+        "  FRAENK_PASSWORD=your_password"
+    )
+
+
+def _parse_credentials_file(path: Path) -> tuple[str, str] | None:
+    """Parse credentials from a file in KEY=value format.
+
+    Args:
+        path: Path to the credentials file
+
+    Returns:
+        tuple[str, str] | None: (username, password) or None if incomplete
+
+    Raises:
+        ValueError: If file format is invalid
+    """
+    username = None
+    password = None
+
+    with path.open('r', encoding='utf-8') as f:
+        for line_num, line in enumerate(f, 1):
             line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                key, value = line.split("=", 1)
-                value = value.strip()
-                # Remove surrounding quotes if present
-                if value and value[0] == value[-1] and value[0] in ('"', "'"):
-                    value = value[1:-1]
-                credentials[key.strip()] = value
-    return credentials
+
+            # Skip empty lines and comments
+            if not line or line.startswith('#'):
+                continue
+
+            # Parse KEY=value
+            if '=' not in line:
+                raise ValueError(f"Invalid format at line {line_num}: {line}")
+
+            key, _, value = line.partition('=')
+            key = key.strip()
+            value = value.strip()
+
+            # Remove quotes if present
+            if value.startswith('"') and value.endswith('"'):
+                value = value[1:-1]
+            elif value.startswith("'") and value.endswith("'"):
+                value = value[1:-1]
+
+            if key == "FRAENK_USERNAME":
+                username = value
+            elif key == "FRAENK_PASSWORD":
+                password = value
+
+    # Return only if both credentials found
+    if username and password:
+        return username, password
+
+    return None
 
 
 def display_data_consumption(data: dict):
@@ -78,8 +192,32 @@ def display_data_consumption(data: dict):
 
         # Convert timestamp to readable date
         expiry = pass_info.get("expiryTimestamp")
-        if expiry:
+        if expiry is not None:
             expiry_date = datetime.fromtimestamp(expiry / 1000)
             print(f"   Expires: {expiry_date.strftime('%Y-%m-%d %H:%M')}")
 
     print("\n" + "=" * 50)
+
+
+# ============================================================================
+# OUTPUT HELPERS
+# ============================================================================
+
+def output_data(data: dict, args):
+    """Output data in requested format"""
+    if args.json:
+        print(json.dumps(data, indent=2, ensure_ascii=False))
+    else:
+        display_data_consumption(data)
+
+
+def log_info(message: str, args):
+    """Log informational message"""
+    if not args.json and not args.quiet:
+        print(message)
+
+
+def log_progress(message: str, args):
+    """Log progress message"""
+    if not args.json:
+        print(message)
