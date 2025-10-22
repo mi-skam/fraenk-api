@@ -115,7 +115,7 @@ def perform_mfa_login(api: FraenkAPI, username: str, password: str, args):
         )
 
     # Get SMS code from user
-    sms_code = _prompt_sms_code(args)
+    sms_code = prompt_sms_code(args)
 
     # Login Step 2: Complete with SMS code
     log_progress("Completing login with SMS code...", args)
@@ -127,7 +127,7 @@ def perform_mfa_login(api: FraenkAPI, username: str, password: str, args):
     log_progress("Login successful!", args)
 
 
-def _prompt_sms_code(args) -> str:
+def prompt_sms_code(args) -> str:
     """Prompt user for SMS code (silent in JSON mode)"""
     if args.json:
         return input()
